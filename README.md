@@ -44,7 +44,48 @@ src/
 scripts/seed.ts              Sample data seeder
 ```
 
-## Setup
+## Quickstart (local, zero external services)
+
+Run the app entirely on your laptop, no Google Cloud or Sheets required:
+
+```bash
+npm install
+cp .env.example .env.local       # already configured for local dev
+npm run dev
+```
+
+Open http://localhost:3000:
+- **Admin** → http://localhost:3000/admin — sign in with `admin@example.com`
+  (any email works at the form; only the one matching `ADMIN_EMAIL` is granted
+  admin rights, the rest see "Unauthorised access")
+- **Participant** → http://localhost:3000/p
+
+Data is written to JSON files under `./data/` (gitignored). Delete that
+folder to reset.
+
+Optional seed:
+
+```bash
+npx tsx scripts/seed.ts
+```
+
+When you want to switch to Google Sheets / Google OAuth (e.g. for Vercel):
+
+```env
+DATA_BACKEND=sheets
+AUTH_MODE=
+NEXT_PUBLIC_AUTH_MODE=
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_SHEETS_SPREADSHEET_ID=...
+GOOGLE_SERVICE_ACCOUNT_EMAIL=...
+GOOGLE_PRIVATE_KEY="..."
+```
+
+The repo factory (`src/lib/store/factory.ts`) swaps in `SheetRepo` and the
+auth module swaps in `GoogleProvider` — no code changes required.
+
+## Production setup (Google Sheets)
 
 ### 1. Install dependencies
 

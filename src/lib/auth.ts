@@ -3,19 +3,45 @@
 
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { getServerSession } from "next-auth";
 
+// AUTH_MODE=dev → simple Credentials provider (no Google needed).
+// Any sign-in attempt matching ADMIN_EMAIL is accepted. For local testing only.
+const isDev = (process.env.AUTH_MODE || "").toLowerCase() === "dev";
+
+const providers = isDev
+  ? [
+      CredentialsProvider({
+        name: "Dev login",
+        credentials: {
+          email: { label: "Email", type: "email", placeholder: "admin@example.com" }
+        },
+        async authorize(credentials) {
+          const email = credentials?.email?.toString().trim().toLowerCase();
+          if (!email) return null;
+          // Anyone can sign in; the admin guard separately enforces ADMIN_EMAIL,
+          // so non-admin sign-ins will land on the "Unauthorised" page.
+          return { id: email, email, name: email };
+        }
+      })
+    ]
+  : [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || ""
+      })
+    ];
+
+export const authMode = isDev ? "dev" : "google";
+
 export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ""
-    })
-  ],
+  providers,
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, profile }) {
+    async jwt({ token, profile, user }) {
       if (profile?.email) token.email = profile.email;
+      else if (user?.email) token.email = user.email;
       return token;
     },
     async session({ session, token }) {

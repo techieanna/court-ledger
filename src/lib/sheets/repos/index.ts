@@ -3,7 +3,8 @@
 
 import { randomUUID } from "crypto";
 import { TABS } from "../schema";
-import { SheetRepo, Row } from "../repo";
+import { Row } from "../repo";
+import { getStore } from "../../store/factory";
 import {
   Member, Booking, SessionRow, Participation, Expense, Payment,
   MonthlySummary, SupportQuery, Setting, Weekday
@@ -15,7 +16,7 @@ const now = () => new Date().toISOString();
 const newId = () => randomUUID();
 
 // --------- Members ----------
-const membersRepo = new SheetRepo(TABS.Members);
+const membersRepo = getStore(TABS.Members);
 function toMember(r: Row): Member {
   return {
     id: r.id, fullName: r.fullName, phone: r.phone, email: r.email,
@@ -49,7 +50,7 @@ export const Members = {
 };
 
 // --------- Bookings ----------
-const bookingsRepo = new SheetRepo(TABS.Bookings);
+const bookingsRepo = getStore(TABS.Bookings);
 function toBooking(r: Row): Booking {
   return {
     id: r.id, date: r.date, weekday: r.weekday as Weekday,
@@ -81,7 +82,7 @@ export const Bookings = {
 };
 
 // --------- Sessions ----------
-const sessionsRepo = new SheetRepo(TABS.Sessions);
+const sessionsRepo = getStore(TABS.Sessions);
 function toSession(r: Row): SessionRow {
   return {
     id: r.id, bookingId: r.bookingId, date: r.date,
@@ -105,7 +106,7 @@ export const Sessions = {
 };
 
 // --------- Participation ----------
-const partRepo = new SheetRepo(TABS.Participation);
+const partRepo = getStore(TABS.Participation);
 function toPart(r: Row): Participation {
   return {
     id: r.id, sessionId: r.sessionId, memberId: r.memberId,
@@ -138,7 +139,7 @@ export const ParticipationRepo = {
 };
 
 // --------- Expenses ----------
-const expensesRepo = new SheetRepo(TABS.Expenses);
+const expensesRepo = getStore(TABS.Expenses);
 function toExpense(r: Row): Expense {
   return {
     id: r.id, date: r.date,
@@ -173,7 +174,7 @@ export const Expenses = {
 };
 
 // --------- Payments ----------
-const paymentsRepo = new SheetRepo(TABS.Payments);
+const paymentsRepo = getStore(TABS.Payments);
 function toPayment(r: Row): Payment {
   return {
     id: r.id, memberId: r.memberId, paymentDate: r.paymentDate,
@@ -200,7 +201,7 @@ export const Payments = {
 };
 
 // --------- MonthlySummaries ----------
-const summariesRepo = new SheetRepo(TABS.MonthlySummaries);
+const summariesRepo = getStore(TABS.MonthlySummaries);
 function toSummary(r: Row): MonthlySummary {
   return {
     id: r.id, month: r.month, memberId: r.memberId,
@@ -232,7 +233,7 @@ export const MonthlySummaries = {
 };
 
 // --------- SupportQueries ----------
-const supportRepo = new SheetRepo(TABS.SupportQueries);
+const supportRepo = getStore(TABS.SupportQueries);
 function toSupport(r: Row): SupportQuery {
   return {
     id: r.id, memberName: r.memberName, contact: r.contact, message: r.message,
@@ -259,31 +260,23 @@ export const SupportQueries = {
 };
 
 // --------- Settings ----------
-// The Settings tab uses `key` (column A) as the primary key instead of `id`.
-// We bypass SheetRepo's id-based updates and call the underlying sheet API
-// directly for in-place updates.
-import { sheets, SHEET_ID, ensureBootstrap } from "../client";
-const settingsRepo = new SheetRepo(TABS.Settings);
+// The Settings tab uses `key` as the primary key. We always append on set();
+// getAll() returns the most recent entry per key, so duplicates are harmless.
+// This keeps the implementation backend-agnostic.
+const settingsRepo = getStore(TABS.Settings);
 export const Settings = {
   async getAll(): Promise<Setting[]> {
     const rows = await settingsRepo.listRaw();
-    return rows.map(r => ({ key: r.key, value: r.value, updatedAt: r.updatedAt }));
+    const latest = new Map<string, Setting>();
+    for (const r of rows) {
+      const prev = latest.get(r.key);
+      if (!prev || (r.updatedAt || "") >= (prev.updatedAt || "")) {
+        latest.set(r.key, { key: r.key, value: r.value, updatedAt: r.updatedAt });
+      }
+    }
+    return Array.from(latest.values()).sort((a, b) => a.key.localeCompare(b.key));
   },
   async set(key: string, value: string): Promise<void> {
-    await ensureBootstrap();
-    const rows = await settingsRepo.listRaw();
-    const idx = rows.findIndex(r => r.key === key);
-    const updatedAt = now();
-    if (idx === -1) {
-      await settingsRepo.insert({ key, value, updatedAt });
-      return;
-    }
-    const rowNum = idx + 2;
-    await sheets().spreadsheets.values.update({
-      spreadsheetId: SHEET_ID(),
-      range: `${TABS.Settings.name}!A${rowNum}:C${rowNum}`,
-      valueInputOption: "RAW",
-      requestBody: { values: [[key, value, updatedAt]] }
-    });
+    await settingsRepo.insert({ key, value, updatedAt: now() });
   }
 };

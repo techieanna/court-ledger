@@ -10,8 +10,9 @@
 
 import { TabSchema } from "./schema";
 import { columnLetter, ensureBootstrap, sheets, SHEET_ID } from "./client";
+import { TableStore, Row } from "../store/types";
 
-export type Row = Record<string, string>;
+export type { Row };
 
 function rowToObj(headers: string[], row: string[]): Row {
   const o: Row = {};
@@ -28,7 +29,7 @@ function objToRow(headers: string[], obj: Record<string, unknown>): string[] {
   });
 }
 
-export class SheetRepo {
+export class SheetRepo implements TableStore {
   constructor(private tab: TabSchema) {}
 
   private range(rowsFromHeader?: number) {
@@ -57,9 +58,9 @@ export class SheetRepo {
     return idx === -1 ? null : idx + 2;
   }
 
-  async insert(obj: Record<string, unknown>): Promise<void> {
+  async insert(obj: object): Promise<void> {
     await ensureBootstrap();
-    const values = [objToRow(this.tab.headers, obj)];
+    const values = [objToRow(this.tab.headers, obj as Record<string, unknown>)];
     await sheets().spreadsheets.values.append({
       spreadsheetId: SHEET_ID(),
       range: `${this.tab.name}!A2`,
@@ -69,12 +70,12 @@ export class SheetRepo {
     });
   }
 
-  async updateById(id: string, patch: Record<string, unknown>): Promise<boolean> {
+  async updateById(id: string, patch: object): Promise<boolean> {
     const rows = await this.listRaw();
     const idx = rows.findIndex(r => r.id === id);
     if (idx === -1) return false;
     const current = rows[idx];
-    const merged = { ...current, ...patch, id, updatedAt: new Date().toISOString() };
+    const merged = { ...current, ...(patch as Record<string, unknown>), id, updatedAt: new Date().toISOString() };
     const rowNum = idx + 2;
     const last = columnLetter(this.tab.headers.length);
     await sheets().spreadsheets.values.update({
