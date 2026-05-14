@@ -54,11 +54,11 @@ cp .env.example .env.local       # already configured for local dev
 npm run dev
 ```
 
-Open http://localhost:3000:
-- **Admin** → http://localhost:3000/admin — sign in with `admin@example.com`
+Open http://localhost:3100:
+- **Admin** → http://localhost:3100/admin — sign in with `admin@example.com`
   (any email works at the form; only the one matching `ADMIN_EMAIL` is granted
   admin rights, the rest see "Unauthorised access")
-- **Participant** → http://localhost:3000/p
+- **Participant** → http://localhost:3100/p
 
 Data is written to JSON files under `./data/` (gitignored). Delete that
 folder to reset.
@@ -98,7 +98,7 @@ npm install
 1. Go to https://console.cloud.google.com and create a project.
 2. Enable the **Google Sheets API**.
 3. Create OAuth credentials (type: Web application):
-   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+   - Authorized redirect URI: `http://localhost:3100/api/auth/callback/google`
    - Note the **Client ID** and **Client secret**.
 4. Create a **Service Account**, then create a JSON key. Save the
    `client_email` and `private_key` values.
@@ -133,9 +133,9 @@ npm run dev
 ```
 
 Visit:
-- `http://localhost:3000` — landing
-- `http://localhost:3000/admin` — admin (Google login required)
-- `http://localhost:3000/p` — public participant view
+- `http://localhost:3100` — landing
+- `http://localhost:3100/admin` — admin (Google login required)
+- `http://localhost:3100/p` — public participant view
 
 ### 6. (Optional) Seed sample data
 
