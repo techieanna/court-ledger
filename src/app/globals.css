@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html, body { @apply bg-slate-50 text-slate-900 antialiased; }
+
+@layer components {
+  .card { @apply bg-white rounded-2xl shadow-sm border border-slate-200 p-5; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition; }
+  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+  .btn-secondary { @apply btn bg-white border border-slate-300 text-slate-800 hover:bg-slate-50; }
+  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+  .input { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500; }
+  .label { @apply text-xs font-medium text-slate-600 mb-1 block; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .table-wrap { @apply overflow-x-auto rounded-xl border border-slate-200 bg-white; }
+  .th { @apply text-left text-xs uppercase tracking-wide text-slate-500 px-3 py-2 bg-slate-50; }
+  .td { @apply px-3 py-2 text-sm border-t border-slate-100; }
+  .nav-link { @apply flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-slate-700 hover:bg-slate-100; }
+  .nav-link-active { @apply bg-brand-50 text-brand-700 font-medium; }
+}
